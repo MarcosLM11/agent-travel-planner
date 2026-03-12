@@ -1,3 +1,13 @@
 spring:
   application:
-    name: my-agent-travel-planner-app
+    name: travel-planner-agent
+
+embabel:
+  agent:
+    platform:
+      llm-operations:
+        data-binding:
+          max-attempts: 5
+    logging:
+      personality: default
+      verbosity: info
