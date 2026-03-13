@@ -1,8 +1,12 @@
 spring:
   application:
     name: travel-planner-agent
+  config:
+    import: optional:file:.env[.properties]
 
 embabel:
+  models:
+    default-llm: gpt-4.1-nano   # Modelo más económico de OpenAI
   agent:
     platform:
       llm-operations:
@@ -21,5 +25,5 @@ embabel:
       personality: default
       verbosity: info
 
-# LLM API keys via environment variables:
-# OPENAI_API_KEY or ANTHROPIC_API_KEY
+# API keys are loaded from .env file (see .env.example).
+# Each LLM starter only activates when its key is present.

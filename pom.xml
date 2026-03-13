@@ -48,6 +48,14 @@
             <groupId>com.embabel.agent</groupId>
             <artifactId>embabel-agent-starter-shell</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.embabel.agent</groupId>
+            <artifactId>embabel-agent-starter-openai</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.embabel.agent</groupId>
+            <artifactId>embabel-agent-starter-anthropic</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -60,37 +68,6 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <profiles>
-        <profile>
-            <id>openai</id>
-            <activation>
-                <property>
-                    <name>env.OPENAI_API_KEY</name>
-                </property>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.embabel.agent</groupId>
-                    <artifactId>embabel-agent-starter-openai</artifactId>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>anthropic</id>
-            <activation>
-                <property>
-                    <name>env.ANTHROPIC_API_KEY</name>
-                </property>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.embabel.agent</groupId>
-                    <artifactId>embabel-agent-starter-anthropic</artifactId>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
 
     <build>
         <plugins>
