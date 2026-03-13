@@ -5,6 +5,7 @@ import com.embabel.agent.spi.ContextRepository;
 import com.embabel.agent.spi.support.InMemoryContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marcos.myagenttravelplannerapp.domain.TravelerProfile;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -25,23 +26,26 @@ public class SqliteContextRepository implements ContextRepository {
         this.objectMapper = objectMapper;
     }
 
+    @NotNull
     @Override
     public Context create() {
         return new InMemoryContext(UUID.randomUUID().toString());
     }
 
+    @NotNull
     @Override
-    public Context createWithId(String contextId) {
+    public Context createWithId(@NotNull String contextId) {
         return new InMemoryContext(contextId);
     }
 
     @Override
-    public Context findById(String contextId) {
+    public Context findById(@NotNull String contextId) {
         return jpaRepository.findById(contextId)
                 .map(entity -> deserialize(contextId, entity.getPayload()))
                 .orElse(null);
     }
 
+    @NotNull
     @Override
     public Context save(Context context) {
         TravelerProfile profile = context.last(TravelerProfile.class);

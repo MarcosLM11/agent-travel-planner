@@ -27,17 +27,17 @@ class TripSummaryTest {
 
     @Test
     void nullTripIdThrowsException() {
-        List<String> lista = List.of();
+        List<String> list = List.of();
         assertThrows(NullPointerException.class, () ->
-                new TripSummary(null, "Tokyo", null, null, lista, null, null, null)
+                new TripSummary(null, "Tokyo", null, null, list, null, null, null)
         );
     }
 
     @Test
     void nullDestinationThrowsException() {
-        List<String> lista = List.of();
+        List<String> list = List.of();
         assertThrows(NullPointerException.class, () ->
-                new TripSummary("id", null, null, null, lista, null, null, null)
+                new TripSummary("id", null, null, null, list, null, null, null)
         );
     }
 

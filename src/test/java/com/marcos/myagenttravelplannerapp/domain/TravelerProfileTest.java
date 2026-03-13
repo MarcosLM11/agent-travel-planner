@@ -12,9 +12,9 @@ class TravelerProfileTest {
 
     @Test
     void emptyProfileHasCorrectUserId() {
-        TravelerProfile profile = TravelerProfile.empty("marcos");
+        TravelerProfile profile = TravelerProfile.empty("Marcos");
 
-        assertEquals("marcos", profile.userId());
+        assertEquals("Marcos", profile.userId());
     }
 
     @Test
