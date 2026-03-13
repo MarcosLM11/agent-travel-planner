@@ -4,6 +4,7 @@ import com.embabel.agent.api.common.StuckHandlerResult;
 import com.embabel.agent.api.common.StuckHandlingResultCode;
 import com.embabel.agent.core.AgentProcess;
 import com.embabel.agent.domain.io.UserInput;
+import com.embabel.agent.spi.ContextRepository;
 import com.embabel.agent.test.unit.FakeOperationContext;
 import com.marcos.myagenttravelplannerapp.domain.Activity;
 import com.marcos.myagenttravelplannerapp.domain.BudgetLevel;
@@ -25,6 +26,8 @@ import com.marcos.myagenttravelplannerapp.domain.TravelItinerary;
 import com.marcos.myagenttravelplannerapp.domain.TravelPace;
 import com.marcos.myagenttravelplannerapp.domain.TravelRequest;
 import com.marcos.myagenttravelplannerapp.domain.TravelerPreferences;
+import com.marcos.myagenttravelplannerapp.domain.TravelerProfile;
+import com.marcos.myagenttravelplannerapp.memory.TravelerMemoryProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -38,6 +41,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TravelPlannerAgentUnitTest {
 
     private TravelPlannerAgent agent;
+
+    private static final TravelerMemoryProperties MEMORY_PROPS =
+            new TravelerMemoryProperties(true, "default", "~/.travel-planner", 20, 3);
+
+    private static final TravelerProfile EMPTY_PROFILE = TravelerProfile.empty("default");
 
     private static final TravelerPreferences PREFS = new TravelerPreferences(
             List.of("history", "gastronomy"),
@@ -79,7 +87,8 @@ class TravelPlannerAgentUnitTest {
 
     @BeforeEach
     void setUp() {
-        agent = new TravelPlannerAgent();
+        ContextRepository mockRepo = Mockito.mock(ContextRepository.class);
+        agent = new TravelPlannerAgent(mockRepo, MEMORY_PROPS);
     }
 
     @Test
@@ -89,6 +98,7 @@ class TravelPlannerAgentUnitTest {
 
         TravelRequest result = agent.parseRequest(
                 new UserInput("I want to go to Tokyo from April 15 to 22"),
+                EMPTY_PROFILE,
                 context
         );
 
@@ -103,7 +113,7 @@ class TravelPlannerAgentUnitTest {
         var context = FakeOperationContext.create();
         context.expectResponse(REQUEST);
 
-        agent.parseRequest(new UserInput("Tokyo trip from April 15 to 22, love history"), context);
+        agent.parseRequest(new UserInput("Tokyo trip from April 15 to 22, love history"), EMPTY_PROFILE, context);
 
         String prompt = context.getLlmInvocations().getFirst().getPrompt();
         assertTrue(prompt.contains("Tokyo trip from April 15 to 22, love history"));
@@ -205,7 +215,7 @@ class TravelPlannerAgentUnitTest {
         var context = FakeOperationContext.create();
         context.expectResponse(itinerary);
 
-        TravelItinerary result = agent.buildItinerary(REQUEST, PROFILE, CULTURE, GASTRONOMY, context);
+        TravelItinerary result = agent.buildItinerary(REQUEST, PROFILE, CULTURE, GASTRONOMY, EMPTY_PROFILE, context);
 
         assertNotNull(result);
         assertEquals(REQUEST, result.travelRequest());
@@ -218,7 +228,7 @@ class TravelPlannerAgentUnitTest {
         var context = FakeOperationContext.create();
         context.expectResponse(buildSampleItinerary());
 
-        agent.buildItinerary(REQUEST, PROFILE, CULTURE, GASTRONOMY, context);
+        agent.buildItinerary(REQUEST, PROFILE, CULTURE, GASTRONOMY, EMPTY_PROFILE, context);
 
         String prompt = context.getLlmInvocations().getFirst().getPrompt();
         assertTrue(prompt.contains("8 days"));
@@ -229,7 +239,7 @@ class TravelPlannerAgentUnitTest {
         var context = FakeOperationContext.create();
         context.expectResponse(buildSampleItinerary());
 
-        agent.buildItinerary(REQUEST, PROFILE, CULTURE, GASTRONOMY, context);
+        agent.buildItinerary(REQUEST, PROFILE, CULTURE, GASTRONOMY, EMPTY_PROFILE, context);
 
         String prompt = context.getLlmInvocations().getFirst().getPrompt();
         assertTrue(prompt.contains("MODERATE"));

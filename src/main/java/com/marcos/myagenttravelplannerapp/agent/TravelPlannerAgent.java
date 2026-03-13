@@ -8,19 +8,42 @@ import com.embabel.agent.api.common.StuckHandler;
 import com.embabel.agent.api.common.StuckHandlerResult;
 import com.embabel.agent.api.common.StuckHandlingResultCode;
 import com.embabel.agent.core.AgentProcess;
+import com.embabel.agent.core.Context;
 import com.embabel.agent.domain.io.UserInput;
+import com.embabel.agent.spi.ContextRepository;
 import com.marcos.myagenttravelplannerapp.domain.CulturalInsights;
 import com.marcos.myagenttravelplannerapp.domain.DestinationProfile;
 import com.marcos.myagenttravelplannerapp.domain.GastronomyGuide;
 import com.marcos.myagenttravelplannerapp.domain.TravelItinerary;
 import com.marcos.myagenttravelplannerapp.domain.TravelRequest;
+import com.marcos.myagenttravelplannerapp.domain.TravelerProfile;
+import com.marcos.myagenttravelplannerapp.memory.TravelerMemoryProperties;
 import org.jetbrains.annotations.NotNull;
 
 @Agent(description = "Generates personalized travel itineraries based on destination, dates, and traveler preferences")
 public class TravelPlannerAgent implements StuckHandler {
 
-    @Action(description = "Extract destination, dates, duration, and preferences from user's free-text input")
-    public TravelRequest parseRequest(UserInput input, OperationContext context) {
+    private final ContextRepository contextRepository;
+    private final TravelerMemoryProperties memoryProperties;
+
+    public TravelPlannerAgent(ContextRepository contextRepository, TravelerMemoryProperties memoryProperties) {
+        this.contextRepository = contextRepository;
+        this.memoryProperties = memoryProperties;
+    }
+
+    @Action(description = "Load persisted traveler profile from memory, or return empty profile for new users")
+    public TravelerProfile loadTravelerProfile(UserInput input, OperationContext context) {
+        String contextId = "user:" + memoryProperties.userId();
+        Context ctx = contextRepository.findById(contextId);
+        if (ctx == null) {
+            return TravelerProfile.empty(memoryProperties.userId());
+        }
+        TravelerProfile profile = ctx.last(TravelerProfile.class);
+        return profile != null ? profile : TravelerProfile.empty(memoryProperties.userId());
+    }
+
+    @Action(description = "Extract destination, dates, duration, and preferences from user's free-text input, enriched with profile memory")
+    public TravelRequest parseRequest(UserInput input, TravelerProfile profile, OperationContext context) {
         return context.ai()
                 .withDefaultLlm()
                 .createObject(
@@ -31,6 +54,7 @@ public class TravelPlannerAgent implements StuckHandler {
                         "travel pace [RELAXED/MODERATE/INTENSIVE], dietary restrictions, " +
                         "mobility constraints, preferred output language).\n" +
                         "Defaults: budget=MEDIUM, pace=MODERATE, language inferred from user message or 'en'.\n" +
+                        buildProfileContext(profile) +
                         "IMPORTANT: Return null if destination or dates are missing or ambiguous.\n" +
                         "User input: " + input.getContent(),
                         TravelRequest.class
@@ -98,12 +122,13 @@ public class TravelPlannerAgent implements StuckHandler {
     }
 
     @AchievesGoal(description = "Generate a complete personalized travel itinerary")
-    @Action(description = "Build a day-by-day itinerary integrating destination profile, culture, and gastronomy")
+    @Action(description = "Build a day-by-day itinerary integrating destination profile, culture, gastronomy, and traveler history")
     public TravelItinerary buildItinerary(
             TravelRequest request,
             DestinationProfile profile,
             CulturalInsights culture,
             GastronomyGuide gastronomy,
+            TravelerProfile travelerProfile,
             OperationContext context) {
 
         String restrictions = "";
@@ -114,6 +139,8 @@ public class TravelPlannerAgent implements StuckHandler {
             restrictions += ", mobility constraints=" + request.preferences().mobilityConstraints();
         }
 
+        String historyContext = buildHistoryContext(travelerProfile);
+
         return context.ai()
                 .withDefaultLlm()
                 .createObject(
@@ -123,6 +150,7 @@ public class TravelPlannerAgent implements StuckHandler {
                         "Traveler profile: interests=" + request.preferences().interests() +
                         ", pace=" + request.preferences().pace() +
                         ", budget=" + request.preferences().budget() + restrictions + ".\n" +
+                        historyContext +
                         "Destination profile: " + profile + ".\n" +
                         "Cultural insights: " + culture + ".\n" +
                         "Gastronomy recommendations: " + gastronomy + ".\n" +
@@ -161,5 +189,42 @@ public class TravelPlannerAgent implements StuckHandler {
                 StuckHandlingResultCode.NO_RESOLUTION,
                 process
         );
+    }
+
+    private String buildProfileContext(TravelerProfile profile) {
+        if (profile.tripHistory().isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder("Known traveler preferences from history:\n");
+        if (profile.preferredBudget() != null) {
+            sb.append("- Typical budget: ").append(profile.preferredBudget()).append("\n");
+        }
+        if (profile.preferredPace() != null) {
+            sb.append("- Typical pace: ").append(profile.preferredPace()).append("\n");
+        }
+        if (!profile.dietaryRestrictions().isEmpty()) {
+            sb.append("- Dietary restrictions: ").append(profile.dietaryRestrictions()).append("\n");
+        }
+        if (!profile.mobilityConstraints().isBlank()) {
+            sb.append("- Mobility constraints: ").append(profile.mobilityConstraints()).append("\n");
+        }
+        sb.append("Use these as defaults when not explicitly specified in the current message.\n");
+        return sb.toString();
+    }
+
+    private String buildHistoryContext(TravelerProfile profile) {
+        if (profile.tripHistory().isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder("Traveler history:\n");
+        if (!profile.visitedDestinations().isEmpty()) {
+            sb.append("- Already visited: ").append(profile.visitedDestinations())
+              .append(" — avoid repeating the same recommendations.\n");
+        }
+        if (!profile.cumulativeInterests().isEmpty()) {
+            sb.append("- Recurring interests: ").append(profile.cumulativeInterests())
+              .append(" — emphasize these in the itinerary.\n");
+        }
+        return sb.toString();
     }
 }

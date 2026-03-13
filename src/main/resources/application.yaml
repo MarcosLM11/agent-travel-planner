@@ -25,5 +25,20 @@ embabel:
       personality: default
       verbosity: info
 
+spring:
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+travel-planner:
+  memory:
+    enabled: true
+    user-id: default
+    storage-path: ./data
+    max-trip-history: 20
+    preference-window-size: 3
+
 # API keys are loaded from .env file (see .env.example).
 # Each LLM starter only activates when its key is present.
