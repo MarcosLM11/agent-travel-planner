@@ -4,25 +4,34 @@ import com.embabel.agent.api.annotation.AchievesGoal;
 import com.embabel.agent.api.annotation.Action;
 import com.embabel.agent.api.annotation.Agent;
 import com.embabel.agent.api.common.OperationContext;
+import com.embabel.agent.api.common.StuckHandler;
+import com.embabel.agent.api.common.StuckHandlerResult;
+import com.embabel.agent.api.common.StuckHandlingResultCode;
+import com.embabel.agent.core.AgentProcess;
 import com.embabel.agent.domain.io.UserInput;
+import com.marcos.myagenttravelplannerapp.domain.CulturalInsights;
 import com.marcos.myagenttravelplannerapp.domain.DestinationProfile;
 import com.marcos.myagenttravelplannerapp.domain.GastronomyGuide;
 import com.marcos.myagenttravelplannerapp.domain.TravelItinerary;
 import com.marcos.myagenttravelplannerapp.domain.TravelRequest;
-import com.marcos.myagenttravelplannerapp.domain.CulturalInsights;
+import org.jetbrains.annotations.NotNull;
 
 @Agent(description = "Generates personalized travel itineraries based on destination, dates, and traveler preferences")
-public class TravelPlannerAgent {
+public class TravelPlannerAgent implements StuckHandler {
 
     @Action(description = "Extract destination, dates, duration, and preferences from user's free-text input")
     public TravelRequest parseRequest(UserInput input, OperationContext context) {
         return context.ai()
                 .withDefaultLlm()
                 .createObject(
-                        "Extract the travel request from the following user input. " +
-                        "Identify the destination, start date, end date, and traveler preferences " +
-                        "(interests, budget level, travel pace, dietary restrictions, mobility constraints, preferred language). " +
-                        "If budget is not specified, default to MEDIUM. If pace is not specified, default to MODERATE. " +
+                        "You are an expert travel planning assistant. " +
+                        "Extract structured travel information from the following user input.\n" +
+                        "Identify: destination (city or region), start date, end date, " +
+                        "and preferences (interests, budget level [LOW/MEDIUM/HIGH/LUXURY], " +
+                        "travel pace [RELAXED/MODERATE/INTENSIVE], dietary restrictions, " +
+                        "mobility constraints, preferred output language).\n" +
+                        "Defaults: budget=MEDIUM, pace=MODERATE, language inferred from user message or 'en'.\n" +
+                        "IMPORTANT: Return null if destination or dates are missing or ambiguous.\n" +
                         "User input: " + input.getContent(),
                         TravelRequest.class
                 );
@@ -33,9 +42,16 @@ public class TravelPlannerAgent {
         return context.ai()
                 .withDefaultLlm()
                 .createObject(
-                        "Generate a detailed profile for the destination: " + request.destination() + ". " +
-                        "Include climate information for the travel dates (" + request.startDate() + " to " + request.endDate() + "), " +
-                        "local currency, spoken languages, best time to visit, and safety notes.",
+                        "You are a destination expert. Generate a comprehensive profile for: " + request.destination() + ".\n" +
+                        "Travel period: " + request.startDate() + " to " + request.endDate() +
+                        " (" + request.numberOfDays() + " days).\n" +
+                        "Include:\n" +
+                        "- Climate and expected weather for this specific travel period\n" +
+                        "- Average temperature range and packing recommendations\n" +
+                        "- Local currency and typical payment methods\n" +
+                        "- Official and commonly spoken languages\n" +
+                        "- Best time to visit (general annual recommendation)\n" +
+                        "- Safety notes and areas or situations to be aware of",
                         DestinationProfile.class
                 );
     }
@@ -45,11 +61,17 @@ public class TravelPlannerAgent {
         return context.ai()
                 .withDefaultLlm()
                 .createObject(
-                        "Research the culture of " + profile.name() + ", " + profile.country() + " for a traveler visiting from " +
-                        request.startDate() + " to " + request.endDate() + ". " +
-                        "Include local traditions, customs with do's and don'ts, etiquette notes, " +
-                        "useful local phrases with translations, and any festivals or events happening during those dates. " +
-                        "The traveler is interested in: " + request.preferences().interests() + ".",
+                        "You are a cultural expert on " + profile.name() + ", " + profile.country() + ".\n" +
+                        "Research cultural insights for a traveler visiting from " +
+                        request.startDate() + " to " + request.endDate() + ".\n" +
+                        "Traveler interests: " + request.preferences().interests() + ".\n" +
+                        "Provide:\n" +
+                        "- At least 3 important local traditions with their cultural relevance\n" +
+                        "- At least 3 key customs with specific do's and don'ts for tourists\n" +
+                        "- Essential etiquette notes (dining, religious sites, social interactions)\n" +
+                        "- 8-10 useful local phrases with translation and usage context\n" +
+                        "- Festivals or events occurring between " + request.startDate() +
+                        " and " + request.endDate() + " (empty list if none)",
                         CulturalInsights.class
                 );
     }
@@ -58,15 +80,19 @@ public class TravelPlannerAgent {
     public GastronomyGuide researchGastronomy(TravelRequest request, DestinationProfile profile, OperationContext context) {
         String dietaryNote = request.preferences().dietaryRestrictions().isEmpty()
                 ? ""
-                : " The traveler has dietary restrictions: " + request.preferences().dietaryRestrictions() + ".";
+                : "\nDietary restrictions: " + request.preferences().dietaryRestrictions() +
+                  ". Filter ALL recommendations to respect these restrictions.";
 
         return context.ai()
                 .withDefaultLlm()
                 .createObject(
-                        "Research the gastronomy of " + profile.name() + ", " + profile.country() + ". " +
-                        "Include must-try local dishes, recommended restaurants across different price ranges, " +
-                        "food markets, and food experiences like cooking classes or food tours. " +
-                        "Budget level: " + request.preferences().budget() + "." + dietaryNote,
+                        "You are a gastronomy expert on " + profile.name() + ", " + profile.country() + ".\n" +
+                        "Budget level: " + request.preferences().budget() + "." + dietaryNote + "\n" +
+                        "Provide:\n" +
+                        "- At least 5 must-try local dishes with description, typical price, and where to find them\n" +
+                        "- At least 4 recommended restaurants across different neighborhoods and price ranges\n" +
+                        "- Notable food markets and street food areas with visiting tips\n" +
+                        "- 2-3 food experiences (cooking classes, food tours, tastings, etc.)",
                         GastronomyGuide.class
                 );
     }
@@ -80,22 +106,60 @@ public class TravelPlannerAgent {
             GastronomyGuide gastronomy,
             OperationContext context) {
 
+        String restrictions = "";
+        if (!request.preferences().dietaryRestrictions().isEmpty()) {
+            restrictions += ", dietary restrictions=" + request.preferences().dietaryRestrictions();
+        }
+        if (!request.preferences().mobilityConstraints().isBlank()) {
+            restrictions += ", mobility constraints=" + request.preferences().mobilityConstraints();
+        }
+
         return context.ai()
                 .withDefaultLlm()
                 .createObject(
-                        "Build a complete day-by-day travel itinerary for " + request.destination() +
-                        " from " + request.startDate() + " to " + request.endDate() +
-                        " (" + request.numberOfDays() + " days). " +
-                        "Traveler preferences: interests=" + request.preferences().interests() +
+                        "You are a professional travel planner. Build a complete " +
+                        request.numberOfDays() + " days itinerary for " + request.destination() +
+                        " from " + request.startDate() + " to " + request.endDate() + ".\n" +
+                        "Traveler profile: interests=" + request.preferences().interests() +
                         ", pace=" + request.preferences().pace() +
-                        ", budget=" + request.preferences().budget() + ". " +
-                        "Use the following destination profile: " + profile + ". " +
-                        "Integrate cultural insights: " + culture + ". " +
-                        "Integrate gastronomy recommendations: " + gastronomy + ". " +
-                        "Each day must have morning, afternoon, and evening activities, plus meal suggestions. " +
-                        "Include practical tips, a packing list, and an estimated total budget. " +
-                        "Output language: " + request.preferences().language() + ".",
+                        ", budget=" + request.preferences().budget() + restrictions + ".\n" +
+                        "Destination profile: " + profile + ".\n" +
+                        "Cultural insights: " + culture + ".\n" +
+                        "Gastronomy recommendations: " + gastronomy + ".\n" +
+                        "Requirements:\n" +
+                        "- Create exactly " + request.numberOfDays() + " DayPlan entries starting from " + request.startDate() + "\n" +
+                        "- Each day: at least 2 morning activities, 2 afternoon activities, 1 evening activity\n" +
+                        "- Each day: meal suggestions for breakfast, lunch, and dinner\n" +
+                        "- Adapt activity intensity to travel pace: " + request.preferences().pace() + "\n" +
+                        "- Include practical tips list and complete packing list\n" +
+                        "- Provide estimated total budget in local currency\n" +
+                        "- Output language: " + request.preferences().language(),
                         TravelItinerary.class
                 );
+    }
+
+    @NotNull
+    @Override
+    public StuckHandlerResult handleStuck(AgentProcess process) {
+        boolean hasTravelRequest = process.getObjects().stream()
+                .anyMatch(TravelRequest.class::isInstance);
+
+        if (!hasTravelRequest) {
+            return new StuckHandlerResult(
+                    "Cannot generate itinerary: travel request is missing or incomplete. " +
+                    "Please provide a valid destination and travel dates.",
+                    this,
+                    StuckHandlingResultCode.NO_RESOLUTION,
+                    process
+            );
+        }
+
+        return new StuckHandlerResult(
+                "Unable to complete the travel itinerary with the available information. " +
+                "Please verify the destination and travel dates are valid.",
+                this,
+                StuckHandlingResultCode.NO_RESOLUTION,
+                process
+        );
     }
 }

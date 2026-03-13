@@ -1,5 +1,8 @@
 package com.marcos.myagenttravelplannerapp.agent;
 
+import com.embabel.agent.api.common.StuckHandlerResult;
+import com.embabel.agent.api.common.StuckHandlingResultCode;
+import com.embabel.agent.core.AgentProcess;
 import com.embabel.agent.domain.io.UserInput;
 import com.embabel.agent.test.unit.FakeOperationContext;
 import com.marcos.myagenttravelplannerapp.domain.Activity;
@@ -24,6 +27,7 @@ import com.marcos.myagenttravelplannerapp.domain.TravelRequest;
 import com.marcos.myagenttravelplannerapp.domain.TravelerPreferences;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import java.time.LocalDate;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -230,6 +234,27 @@ class TravelPlannerAgentUnitTest {
         String prompt = context.getLlmInvocations().getFirst().getPrompt();
         assertTrue(prompt.contains("MODERATE"));
         assertTrue(prompt.contains("MEDIUM"));
+    }
+
+    @Test
+    void handleStuckWithoutTravelRequestReturnsNoResolution() {
+        AgentProcess process = Mockito.mock(AgentProcess.class);
+        Mockito.when(process.getObjects()).thenReturn(List.of());
+
+        StuckHandlerResult result = agent.handleStuck(process);
+
+        assertEquals(StuckHandlingResultCode.NO_RESOLUTION, result.getCode());
+        assertTrue(result.getMessage().toLowerCase().contains("travel request"));
+    }
+
+    @Test
+    void handleStuckWithTravelRequestReturnsNoResolution() {
+        AgentProcess process = Mockito.mock(AgentProcess.class);
+        Mockito.when(process.getObjects()).thenReturn(List.of(REQUEST));
+
+        StuckHandlerResult result = agent.handleStuck(process);
+
+        assertEquals(StuckHandlingResultCode.NO_RESOLUTION, result.getCode());
     }
 
     private TravelItinerary buildSampleItinerary() {

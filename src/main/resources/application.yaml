@@ -8,6 +8,18 @@ embabel:
       llm-operations:
         data-binding:
           max-attempts: 5
+        prompts:
+          generate-examples-by-default: false
+      models:
+        openai:
+          max-attempts: 3
+          backoff-millis: 2000
+        anthropic:
+          max-attempts: 3
+          backoff-millis: 2000
     logging:
       personality: default
       verbosity: info
+
+# LLM API keys via environment variables:
+# OPENAI_API_KEY or ANTHROPIC_API_KEY

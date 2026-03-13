@@ -3,8 +3,9 @@ package com.marcos.myagenttravelplannerapp.domain;
 import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class TravelRequestTest {
 
@@ -43,62 +44,35 @@ class TravelRequestTest {
 
     @Test
     void rejectsBlankDestination() {
-        assertThrows(IllegalArgumentException.class, () ->
-                new TravelRequest(
-                        "  ",
-                        LocalDate.of(2026, 4, 15),
-                        LocalDate.of(2026, 4, 22),
-                        DEFAULT_PREFERENCES
-                )
-        );
+        var start = LocalDate.of(2026, 4, 15);
+        var end = LocalDate.of(2026, 4, 22);
+        assertThrows(IllegalArgumentException.class, () -> new TravelRequest("  ", start, end, DEFAULT_PREFERENCES));
     }
 
     @Test
     void rejectsNullDestination() {
-        assertThrows(IllegalArgumentException.class, () ->
-                new TravelRequest(
-                        null,
-                        LocalDate.of(2026, 4, 15),
-                        LocalDate.of(2026, 4, 22),
-                        DEFAULT_PREFERENCES
-                )
-        );
+        var start = LocalDate.of(2026, 4, 15);
+        var end = LocalDate.of(2026, 4, 22);
+        assertThrows(IllegalArgumentException.class, () -> new TravelRequest(null, start, end, DEFAULT_PREFERENCES));
     }
 
     @Test
     void rejectsNullStartDate() {
-        assertThrows(IllegalArgumentException.class, () ->
-                new TravelRequest(
-                        "Tokyo",
-                        null,
-                        LocalDate.of(2026, 4, 22),
-                        DEFAULT_PREFERENCES
-                )
-        );
+        var end = LocalDate.of(2026, 4, 22);
+        assertThrows(IllegalArgumentException.class, () -> new TravelRequest("Tokyo", null, end, DEFAULT_PREFERENCES));
     }
 
     @Test
     void rejectsNullEndDate() {
-        assertThrows(IllegalArgumentException.class, () ->
-                new TravelRequest(
-                        "Tokyo",
-                        LocalDate.of(2026, 4, 15),
-                        null,
-                        DEFAULT_PREFERENCES
-                )
-        );
+        var start = LocalDate.of(2026, 4, 15);
+        assertThrows(IllegalArgumentException.class, () -> new TravelRequest("Tokyo", start, null, DEFAULT_PREFERENCES));
     }
 
     @Test
     void rejectsEndDateBeforeStartDate() {
-        assertThrows(IllegalArgumentException.class, () ->
-                new TravelRequest(
-                        "Tokyo",
-                        LocalDate.of(2026, 4, 22),
-                        LocalDate.of(2026, 4, 15),
-                        DEFAULT_PREFERENCES
-                )
-        );
+        var start = LocalDate.of(2026, 4, 22);
+        var end = LocalDate.of(2026, 4, 15);
+        assertThrows(IllegalArgumentException.class, () -> new TravelRequest("Tokyo", start, end, DEFAULT_PREFERENCES));
     }
 
     @Test
