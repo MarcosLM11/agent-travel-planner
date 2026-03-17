@@ -1,0 +1,9 @@
+services:
+  travel-planner:
+    build: .
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./.env:/app/.env:ro
+      - ./data:/app/data
+      - ./logs:/app/logs

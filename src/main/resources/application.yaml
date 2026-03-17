@@ -3,6 +3,11 @@ spring:
     name: travel-planner-agent
   config:
     import: optional:file:.env[.properties]
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
 
 embabel:
   models:
@@ -22,15 +27,8 @@ embabel:
           max-attempts: 3
           backoff-millis: 2000
     logging:
-      personality: default
+      personality: starwars
       verbosity: info
-
-spring:
-  jpa:
-    database-platform: org.hibernate.community.dialect.SQLiteDialect
-    hibernate:
-      ddl-auto: update
-    show-sql: false
 
 travel-planner:
   memory:
