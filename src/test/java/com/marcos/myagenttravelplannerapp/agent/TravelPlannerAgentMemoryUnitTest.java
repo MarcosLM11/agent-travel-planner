@@ -17,8 +17,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static com.marcos.myagenttravelplannerapp.fixtures.TravelerProfileFixtures.anEmptyProfile;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -87,7 +91,7 @@ class TravelPlannerAgentMemoryUnitTest {
         var context = FakeOperationContext.create();
         context.expectResponse(stubResponse);
 
-        agent.parseRequest(new UserInput("I want to visit Rome"), TravelerProfile.empty("default"), context);
+        agent.parseRequest(new UserInput("I want to visit Rome"), anEmptyProfile(), context);
 
         String prompt = context.getLlmInvocations().getFirst().getPrompt();
         assertTrue(prompt.contains("Rome"));

@@ -6,33 +6,27 @@ import com.embabel.agent.core.AgentProcess;
 import com.embabel.agent.domain.io.UserInput;
 import com.embabel.agent.spi.ContextRepository;
 import com.embabel.agent.test.unit.FakeOperationContext;
-import com.marcos.myagenttravelplannerapp.domain.Activity;
-import com.marcos.myagenttravelplannerapp.domain.BudgetLevel;
-import com.marcos.myagenttravelplannerapp.domain.ClimateInfo;
 import com.marcos.myagenttravelplannerapp.domain.CulturalInsights;
-import com.marcos.myagenttravelplannerapp.domain.Custom;
-import com.marcos.myagenttravelplannerapp.domain.DayPlan;
 import com.marcos.myagenttravelplannerapp.domain.DestinationProfile;
-import com.marcos.myagenttravelplannerapp.domain.Dish;
-import com.marcos.myagenttravelplannerapp.domain.Event;
 import com.marcos.myagenttravelplannerapp.domain.GastronomyGuide;
-import com.marcos.myagenttravelplannerapp.domain.LocalPhrase;
-import com.marcos.myagenttravelplannerapp.domain.MealPlan;
-import com.marcos.myagenttravelplannerapp.domain.MealSuggestion;
-import com.marcos.myagenttravelplannerapp.domain.PointOfInterest;
-import com.marcos.myagenttravelplannerapp.domain.Restaurant;
-import com.marcos.myagenttravelplannerapp.domain.Tradition;
 import com.marcos.myagenttravelplannerapp.domain.TravelItinerary;
-import com.marcos.myagenttravelplannerapp.domain.TravelPace;
 import com.marcos.myagenttravelplannerapp.domain.TravelRequest;
 import com.marcos.myagenttravelplannerapp.domain.TravelerPreferences;
 import com.marcos.myagenttravelplannerapp.domain.TravelerProfile;
+import com.marcos.myagenttravelplannerapp.domain.BudgetLevel;
+import com.marcos.myagenttravelplannerapp.domain.TravelPace;
 import com.marcos.myagenttravelplannerapp.memory.TravelerMemoryProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import java.time.LocalDate;
 import java.util.List;
+import static com.marcos.myagenttravelplannerapp.fixtures.ItineraryFixtures.aCulturalInsights;
+import static com.marcos.myagenttravelplannerapp.fixtures.ItineraryFixtures.aDestinationProfile;
+import static com.marcos.myagenttravelplannerapp.fixtures.ItineraryFixtures.aGastronomyGuide;
+import static com.marcos.myagenttravelplannerapp.fixtures.ItineraryFixtures.aTravelItinerary;
+import static com.marcos.myagenttravelplannerapp.fixtures.TravelRequestFixtures.aTravelRequest;
+import static com.marcos.myagenttravelplannerapp.fixtures.TravelerProfileFixtures.anEmptyProfile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -45,45 +39,11 @@ class TravelPlannerAgentUnitTest {
     private static final TravelerMemoryProperties MEMORY_PROPS =
             new TravelerMemoryProperties(true, "default", "~/.travel-planner", 20, 3);
 
-    private static final TravelerProfile EMPTY_PROFILE = TravelerProfile.empty("default");
-
-    private static final TravelerPreferences PREFS = new TravelerPreferences(
-            List.of("history", "gastronomy"),
-            BudgetLevel.MEDIUM,
-            TravelPace.MODERATE,
-            List.of(),
-            "",
-            "es"
-    );
-
-    private static final TravelRequest REQUEST = new TravelRequest(
-            "Tokyo",
-            LocalDate.of(2026, 4, 15),
-            LocalDate.of(2026, 4, 22),
-            PREFS
-    );
-
-    private static final DestinationProfile PROFILE = new DestinationProfile(
-            "Tokyo", "Japan", "Capital of Japan",
-            new ClimateInfo("Mild spring", "15-20°C", List.of("Light jacket", "Umbrella")),
-            "March-May", "Japanese Yen (JPY)", List.of("Japanese", "English"),
-            "Very safe city"
-    );
-
-    private static final CulturalInsights CULTURE = new CulturalInsights(
-            List.of(new Tradition("Hanami", "Cherry blossom viewing", "Spring tradition")),
-            List.of(new Custom("Bowing", "Greeting by bowing", "Bow when greeting")),
-            List.of("Remove shoes indoors"),
-            List.of(new LocalPhrase("Arigatou", "Thank you", "Use frequently")),
-            List.of(new Event("Cherry Blossom Festival", "April 2026", "Annual festival", "Ueno Park"))
-    );
-
-    private static final GastronomyGuide GASTRONOMY = new GastronomyGuide(
-            List.of(new Dish("Ramen", "Noodle soup", "¥800-1200", "Ichiran")),
-            List.of(new Restaurant("Ichiran", "Ramen", "$$", "Shibuya", "No reservations needed")),
-            List.of(new PointOfInterest("Tsukiji Outer Market", "market", "Fish market", "2 hours", "Tsukiji", "6am-2pm", "Free", "Go early")),
-            List.of("Sushi-making class")
-    );
+    private static final TravelerProfile EMPTY_PROFILE = anEmptyProfile();
+    private static final TravelRequest REQUEST = aTravelRequest();
+    private static final DestinationProfile PROFILE = aDestinationProfile();
+    private static final CulturalInsights CULTURE = aCulturalInsights();
+    private static final GastronomyGuide GASTRONOMY = aGastronomyGuide();
 
     @BeforeEach
     void setUp() {
@@ -211,7 +171,7 @@ class TravelPlannerAgentUnitTest {
 
     @Test
     void buildItineraryProducesItinerary() {
-        var itinerary = buildSampleItinerary();
+        var itinerary = aTravelItinerary();
         var context = FakeOperationContext.create();
         context.expectResponse(itinerary);
 
@@ -226,7 +186,7 @@ class TravelPlannerAgentUnitTest {
     @Test
     void buildItineraryPromptContainsNumberOfDays() {
         var context = FakeOperationContext.create();
-        context.expectResponse(buildSampleItinerary());
+        context.expectResponse(aTravelItinerary());
 
         agent.buildItinerary(REQUEST, PROFILE, CULTURE, GASTRONOMY, EMPTY_PROFILE, context);
 
@@ -237,7 +197,7 @@ class TravelPlannerAgentUnitTest {
     @Test
     void buildItineraryPromptContainsPaceAndBudget() {
         var context = FakeOperationContext.create();
-        context.expectResponse(buildSampleItinerary());
+        context.expectResponse(aTravelItinerary());
 
         agent.buildItinerary(REQUEST, PROFILE, CULTURE, GASTRONOMY, EMPTY_PROFILE, context);
 
@@ -265,27 +225,5 @@ class TravelPlannerAgentUnitTest {
         StuckHandlerResult result = agent.handleStuck(process);
 
         assertEquals(StuckHandlingResultCode.NO_RESOLUTION, result.getCode());
-    }
-
-    private TravelItinerary buildSampleItinerary() {
-        return new TravelItinerary(
-                REQUEST, PROFILE, CULTURE, GASTRONOMY,
-                List.of(new DayPlan(
-                        1, LocalDate.of(2026, 4, 15), "Arrival day",
-                        List.of(new Activity("10:00", "Sensoji", "Ancient temple", "Asakusa", "2h", "Go early")),
-                        List.of(new Activity("14:00", "Meiji Shrine", "Shrine", "Harajuku", "1.5h", "Free")),
-                        List.of(new Activity("19:00", "Shibuya", "Crossing", "Shibuya", "1h", "Best at night")),
-                        new MealPlan(
-                                new MealSuggestion("Hotel", "Japanese set", "Western", "$$"),
-                                new MealSuggestion("Ichiran", "Ramen", "Udon", "$$"),
-                                new MealSuggestion("Gonpachi", "Yakitori", "Tempura", "$$$")
-                        ),
-                        "Use Suica card", "¥15000"
-                )),
-                List.of("Carry cash", "Get a Suica card"),
-                List.of("Light jacket", "Comfortable shoes"),
-                "¥120000",
-                "8-day exploration of Tokyo"
-        );
     }
 }

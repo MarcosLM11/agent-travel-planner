@@ -2,6 +2,7 @@ package com.marcos.myagenttravelplannerapp.domain;
 
 import org.junit.jupiter.api.Test;
 import java.util.List;
+import static com.marcos.myagenttravelplannerapp.fixtures.TravelerProfileFixtures.anEmptyProfile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -19,7 +20,7 @@ class TravelerProfileTest {
 
     @Test
     void emptyProfileHasEmptyLists() {
-        TravelerProfile profile = TravelerProfile.empty("default");
+        TravelerProfile profile = anEmptyProfile();
 
         assertTrue(profile.cumulativeInterests().isEmpty());
         assertTrue(profile.dietaryRestrictions().isEmpty());
@@ -29,7 +30,7 @@ class TravelerProfileTest {
 
     @Test
     void emptyProfileHasNullEnums() {
-        TravelerProfile profile = TravelerProfile.empty("default");
+        TravelerProfile profile = anEmptyProfile();
 
         assertNull(profile.preferredBudget());
         assertNull(profile.preferredPace());
@@ -59,7 +60,7 @@ class TravelerProfileTest {
 
     @Test
     void profileListsAreImmutable() {
-        TravelerProfile profile = TravelerProfile.empty("default");
+        TravelerProfile profile = anEmptyProfile();
         List<String> interests = profile.cumulativeInterests();
         assertThrows(UnsupportedOperationException.class, () -> interests.add("history"));
     }

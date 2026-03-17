@@ -2,21 +2,14 @@ package com.marcos.myagenttravelplannerapp.domain;
 
 import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
-import java.util.List;
+import static com.marcos.myagenttravelplannerapp.fixtures.TravelRequestFixtures.aTravelerPreferences;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class TravelRequestTest {
 
-    private static final TravelerPreferences DEFAULT_PREFERENCES = new TravelerPreferences(
-            List.of("history", "gastronomy"),
-            BudgetLevel.MEDIUM,
-            TravelPace.MODERATE,
-            List.of(),
-            "",
-            "es"
-    );
+    private static final TravelerPreferences DEFAULT_PREFERENCES = aTravelerPreferences();
 
     @Test
     void numberOfDaysIsComputedFromDates() {
